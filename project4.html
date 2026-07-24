@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atmosphere | Weather App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="project4.css">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+    <div class="app-wrapper">
+        <!-- App Title -->
+        <div class="app-header">
+            <i class='bx bx-cloud-lightning'></i>
+            <h1>Atmosphere</h1>
+        </div>
+        <!-- Search Box -->
+        <div class="search-container">
+            <div class="search-box">
+                <i class='bx bx-search-alt search-icon'></i>
+                <input type="text" id="cityInput" placeholder="Search city or country..." spellcheck="false" autocomplete="off">
+                <button id="searchBtn" title="Search">
+                    <i class='bx bx-right-arrow-alt'></i>
+                </button>
+            </div>
+            <!-- Error Message -->
+            <div class="error-msg" id="errorMsg">
+                <i class='bx bx-error-circle'></i>
+                <span>City not found. Please try again!</span>
+            </div>
+        </div>
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Fetching weather data...</span>
+        </div>
+        <!-- Weather Card -->
+        <div class="weather-card" id="weatherCard">
+            <!-- Top: Location & Date -->
+            <div class="location-row">
+                <div class="city-info">
+                    <h2 class="city-name" id="cityName">New York</h2>
+                    <p class="country-name" id="countryName">United States</p>
+                </div>
+                <div class="date-info" id="dateInfo"></div>
+            </div>
+            <!-- Center: Icon & Temperature -->
+            <div class="main-weather">
+                <div class="weather-icon-wrap">
+                    <img src="" class="weather-icon" id="weatherIcon" alt="Weather Icon">
+                    <div class="icon-glow"></div>
+                </div>
+                <div class="temp-block">
+                    <h1 class="temperature" id="temperature">22°C</h1>
+                    <p class="feels-like" id="feelsLike">Feels like 20°C</p>
+                    <p class="condition" id="conditionText">Partly Cloudy</p>
+                </div>
+            </div>
+            <!-- Divider -->
+            <div class="divider"></div>
+            <!-- Bottom: Details Grid -->
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-icon-wrap">
+                         <i class='bx bx-droplet'></i>
+                    </div>
+                    <div class="detail-data">
+                        <p class="detail-value" id="humidity">--</p>
+                        <p class="detail-label">Humidity</p>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon-wrap">
+                        <i class='bx bx-wind'></i>
+                    </div>
+                    <div class="detail-data">
+                        <p class="detail-value" id="windSpeed">--</p>
+                        <p class="detail-label">Wind Speed</p>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon-wrap">
+                        <i class='bx bx-show'></i>
+                    </div>
+                    <div class="detail-data">
+                        <p class="detail-value" id="visibility">--</p>
+                        <p class="detail-label">Visibility</p>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon-wrap">
+                        <i class='bx bx-thermometer'></i>
+                    </div>
+                    <div class="detail-data">
+                        <p class="detail-value" id="pressure">--</p>
+                        <p class="detail-label">Pressure</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+         <p class="hint-text">Press <kbd>Enter</kbd> or click the arrow to search</p>
+    </div>
+    <script>
+        // ==================== CONFIG ====================
+        const API_KEY = "6bea4657fce2f64dc10286ce3bce6504";
+        const API_URL = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+        // ==================== DOM ELEMENTS ====================
+        const cityInput = document.getElementById("cityInput");
+        const searchBtn = document.getElementById("searchBtn");
+        const weatherCard = document.getElementById("weatherCard");
+        const loading = document.getElementById("loading");
+        const errorMsg = document.getElementById("errorMsg");
+        // Weather Icon Map using Boxicons emoji + flaticon transparent icons
+        const weatherIconMap = {
+            "Clear": {
+                icon: "https://cdn-icons-png.flaticon.com/512/3222/3222800.png",
+                gradient: "linear-gradient(135deg, #f6d365 0%, #fda085 100%)"
+            },
+            "Clouds": {
+                icon: "https://cdn-icons-png.flaticon.com/512/1850/1850730.png",
+                gradient: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)"
+            },
+            "Rain": {
+                icon: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png",
+                gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+            },
+            "Drizzle": {
+                icon: "https://cdn-icons-png.flaticon.com/512/5113/5113614.png",
+                gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+            },
+             "Thunderstorm": {
+                icon: "https://cdn-icons-png.flaticon.com/512/1197/1197102.png",
+                gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            },
+            "Snow": {
+                icon: "https://cdn-icons-png.flaticon.com/512/642/642102.png",
+                gradient: "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)"
+            },
+            "Mist": {
+                icon: "https://cdn-icons-png.flaticon.com/512/4005/4005901.png",
+                gradient: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)"
+            },
+            "Fog": {
+                icon: "https://cdn-icons-png.flaticon.com/512/4005/4005901.png",
+                gradient: "linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)"
+            },
+            "Haze": {
+                icon: "https://cdn-icons-png.flaticon.com/512/4005/4005901.png",
+                gradient: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)"
+            }
+        };
+        // ==================== DATE FORMATTER ====================
+        function getFormattedDate() {
+            const now = new Date();
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+        }
+        // ==================== SHOW/HIDE STATES ====================
+        function setLoading(show) {
+            loading.classList.toggle("visible", show);
+            if (show) {
+                weatherCard.classList.remove("visible");
+                errorMsg.classList.remove("visible");
+            }
+        }
+        function showError() {
+            errorMsg.classList.add("visible");
+            weatherCard.classList.remove("visible");
+        }
+        function hideError() {
+            errorMsg.classList.remove("visible");
+        }
+        // ==================== MAIN WEATHER FETCH ====================
+        async function checkWeather(city) {
+            if (!city || city.trim() === "") return;
+            hideError();
+            setLoading(true);
+            try {
+                const response = await fetch(API_URL + encodeURIComponent(city.trim()) + `&appid=${API_KEY}`);
+                setLoading(false);
+                if (response.status === 404) {
+                    showError();
+                    return;
+                }
+                if (!response.ok) {
+                    showError();
+                    return;
+                }
+                const data = await response.json();
+                updateWeatherUI(data);
+            } catch (err) {
+                setLoading(false);
+                showError();
+            }
+        }
+ // ==================== UPDATE UI ====================
+        function updateWeatherUI(data) {
+            const conditionMain = data.weather[0].main;
+            const conditionDesc = data.weather[0].description
+                .split(' ')
+                .map(w => w[0].toUpperCase() + w.slice(1))
+                .join(' ');
+            // Pick theme
+            const theme = weatherIconMap[conditionMain] || weatherIconMap["Clouds"];
+            // Update background gradient on card
+            document.querySelector(".app-wrapper").style.setProperty("--card-gradient", theme.gradient);
+            // Set values
+            document.getElementById("cityName").textContent = data.name;
+            document.getElementById("countryName").textContent = data.sys.country || "";
+            document.getElementById("temperature").textContent = `${Math.round(data.main.temp)}°C`;
+            document.getElementById("feelsLike").textContent = `Feels like ${Math.round(data.main.feels_like)}°C`;
+            document.getElementById("conditionText").textContent = conditionDesc;
+            document.getElementById("humidity").textContent = `${data.main.humidity}%`;
+            document.getElementById("windSpeed").textContent = `${data.wind.speed} km/h`;
+            document.getElementById("visibility").textContent = data.visibility
+                ? `${(data.visibility / 1000).toFixed(1)} km`
+                : "N/A";
+            document.getElementById("pressure").textContent = `${data.main.pressure} hPa`;
+            document.getElementById("dateInfo").textContent = getFormattedDate();
+            // Update icon with fade
+            const icon = document.getElementById("weatherIcon");
+            icon.style.opacity = "0";
+            icon.src = theme.icon;
+            icon.onload = () => {
+                icon.style.transition = "opacity 0.4s ease";
+                icon.style.opacity = "1";
+            };
+            // Show card
+            weatherCard.classList.add("visible");
+        }
+         // ==================== EVENT LISTENERS ====================
+        // Button click
+        searchBtn.addEventListener("click", () => {
+            checkWeather(cityInput.value);
+        });
+        // Enter key
+        cityInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                checkWeather(cityInput.value);
+            }
+        });
+        // Show date on load
+        document.getElementById("dateInfo").textContent = getFormattedDate();
+    </script>
+</body>
+</html>
